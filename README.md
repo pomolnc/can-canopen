@@ -99,3 +99,88 @@ CAN(Controller Area Network, 控制器局域网络)是由博世开发的一种�
 
 被动错误标志除了上边两部分外，在间歇字段之后还有8个显性位的挂起传输。在挂起传输阶段被动错误节点不可以发送数据帧与远程帧。
 
+### 通讯对象
+CANOpen协议共有6种通讯对象，分别是：PDO、SDO、SYNC、TIME、EMCY、NMT。这6种通讯对象完成了CANOpen协议的所有通讯功能。其中我们只介绍使用较多的PDO、SDO、NMT。
+#### 通讯对象ID(COB-ID)
+CANOpen协议的通讯对象主要利用了CAN协议中的数据帧和远程帧。为了区分不同的通讯对象，CANOpen协议利用数据帧/远程帧中的ID。其中第7位到第10位为功能代码。第0位到第6位为节点ID，用以区分不同节点的相同功能。这样就允许最多127个从节点与主节点通讯。
+![](http://img.blog.csdn.net/20160515192132336?watermark/2/text/aHR0cDovL2Jsb2cuY3Nkbi5uZXQv/font/5a6L5L2T/fontsize/400/fill/I0JBQkFCMA==/dissolve/70/gravity/Center)
+
+下面是预定义的各通讯对象的COB-ID
+![](http://img.blog.csdn.net/20160515192147664?watermark/2/text/aHR0cDovL2Jsb2cuY3Nkbi5uZXQv/font/5a6L5L2T/fontsize/400/fill/I0JBQkFCMA==/dissolve/70/gravity/Center)
+
+其中绿色部分为广播的通讯对象，蓝色部分为点对点的通讯对象。
+
+COB-ID的大小也决定了通讯对象的优先级，其中NMT的优先级最高，PDO的优先级高于SDO。
+
+#### Process Data Object
+CANOpen中的实时数据传输是由PDO来完成的。PDO的传输采用了生产者消费者模式。共有两种PDO，TPDO和RPDO。TPDO用来传输数据，支持TPDO的节点都是PDO数据的生产者。RPDO用来接收PDO数据，支持RPDO的节点是PDO数据的消费者。从表3可以看出，一个节点最多支持4个TPDO（分别是180h+NodeID、280h +NodeID、380h +NodeID、480h +NodeID）和4个RPDO（分别是200h +NodeID、300h +NodeID、400h +NodeID、500h +NodeID）。每一个PDO都对应一些参数，包括通讯参数和映射参数。
+##### PDO参数
+PDO的参数包括两部分，通讯参数和映射参数.他们占据了对象字典中从1400到1BFF之间的位置.
+![](http://img.blog.csdn.net/20160515192202073?watermark/2/text/aHR0cDovL2Jsb2cuY3Nkbi5uZXQv/font/5a6L5L2T/fontsize/400/fill/I0JBQkFCMA==/dissolve/70/gravity/Center)
+
+PDO的通讯参数定义了COB-ID,传输类型(同步,异步,循环,时间出发),inhibit time(两个PDO的最小间隔)等,见表5.
+![](http://img.blog.csdn.net/20160515192217339?watermark/2/text/aHR0cDovL2Jsb2cuY3Nkbi5uZXQv/font/5a6L5L2T/fontsize/400/fill/I0JBQkFCMA==/dissolve/70/gravity/Center)
+
+表6给出了PDO的映射参数.一个PDO最多可以映射到64个对象。每一项的含义见图29。最高16位是对象字典的索引，后面8位是子索引。最低8位是数据长度。
+![](http://img.blog.csdn.net/20160515192227618?watermark/2/text/aHR0cDovL2Jsb2cuY3Nkbi5uZXQv/font/5a6L5L2T/fontsize/400/fill/I0JBQkFCMA==/dissolve/70/gravity/Center)
+![](http://img.blog.csdn.net/20160515192237946?watermark/2/text/aHR0cDovL2Jsb2cuY3Nkbi5uZXQv/font/5a6L5L2T/fontsize/400/fill/I0JBQkFCMA==/dissolve/70/gravity/Center)
+
+##### PDO映射
+PDO的内容没有固定的形式，它的数据段可以是1到8个字节长。使用PDO的一个基本的出发点是发射端和接收端都知道PDO中的数据的含义。图30说明了具体的工作原理。PDO采用了生产者和消费者模式。生产者按照TPDO的映射参数从对象字典中抽取数据形成PDO的数据。当消费者接收到PDO的数据后，就会按照RPDO的映射关系，将PDO中的数据解析出来，填入对应的数据字典中。
+
+图31给出了生产者生成PDO0数据的具体过程。首先生产者从[1800,01]中得到COB-ID。然后从[1A00,01]中获取第一个对象。[1A00,01]中的值为0x20000108h，那么第一个对象为[2000,01]，对应值为A,在PDO中占0x8位。接着是第二个对象[2003,03]，对应值为G，在PDO中占0x10位。最后是对象[2003,01]，对应值F，在PDO中占0x8位。这样一个有数据A、G、F组成的，32位的PDO就形成了。
+
+#### SDO
+SDO(Service Data Object)使用Client-Server模式建立起点到点的通讯并实现了对对象字典中条目的读写。其中被访问的对象字典的所在设备作为Server，访问对象字典的设备作为client。参考下图。SDO采用的请求应答模式，每次SDO访问都会有2条CAN的数据帧对应。一条是请求，一条是应答。
+![](http://img.blog.csdn.net/20160515192526844?watermark/2/text/aHR0cDovL2Jsb2cuY3Nkbi5uZXQv/font/5a6L5L2T/fontsize/400/fill/I0JBQkFCMA==/dissolve/70/gravity/Center)
+
+SDO主要提供3种服务：段传输，块传输，中止传输。下面分别来介绍这三种服务是如何实现的。
+
+#### 段传输
+下面是SDO段传输Download过程中的示意图。首先由client端发起，然后Server端应答。这样一来一回。知道把数据传输完毕。当传输的数据长度小于4时，一次应答就可把数据传输完毕。
+![](http://img.blog.csdn.net/20160515192543266?watermark/2/text/aHR0cDovL2Jsb2cuY3Nkbi5uZXQv/font/5a6L5L2T/fontsize/400/fill/I0JBQkFCMA==/dissolve/70/gravity/Center)
+![](http://img.blog.csdn.net/20160515192558183?watermark/2/text/aHR0cDovL2Jsb2cuY3Nkbi5uZXQv/font/5a6L5L2T/fontsize/400/fill/I0JBQkFCMA==/dissolve/70/gravity/Center)
+![](http://img.blog.csdn.net/20160515192610839?watermark/2/text/aHR0cDovL2Jsb2cuY3Nkbi5uZXQv/font/5a6L5L2T/fontsize/400/fill/I0JBQkFCMA==/dissolve/70/gravity/Center)
+图34、35标出了在SDO段下载的初始化和数据传输阶段的命令字。其中：
+
+* ccs: client命令标识符
+    + 0:段下载请求
+    + 1:初始化下载请求
+    + 2:初始化上传请求
+    + 3:段上传请求
+* scs: server命令表示符
+    + 0:段上传响应
+    + 1:段下载相应
+    + 2:初始化上传响应
+    + 3初始化下载响应
+* n:指示不含数据的字节数.
+* e:传输类型
+    + 0:普通传输
+    + 1:快速传输(输出长度<=4)
+* s:大小指示器
+* m:指示数据的索引和子索引.
+* d:数据
+* X:总是0
+* reserved:预留，总是0
+* c:指示是否还有数据需要下载/上传
+* t:触发位。这个位没发送一次数据会反转一下。
+SDO段上传的过程与段下载的过程类似，只是命令字不同。
+![](http://img.blog.csdn.net/20160515192624595?watermark/2/text/aHR0cDovL2Jsb2cuY3Nkbi5uZXQv/font/5a6L5L2T/fontsize/400/fill/I0JBQkFCMA==/dissolve/70/gravity/Center)
+![](http://img.blog.csdn.net/20160515192643752?watermark/2/text/aHR0cDovL2Jsb2cuY3Nkbi5uZXQv/font/5a6L5L2T/fontsize/400/fill/I0JBQkFCMA==/dissolve/70/gravity/Center)
+
+##### 快传输
+块传输的主要目的是为了提高传输效率。它与段传输的主要区别在于：块传输时，可以传输多次数据之后，才会有一次应答，如图38。CANOpen将数据分为多个block，每个block又由1-127个segment组成。在传输完一个block的数据之后，才会有一次的应答。
+![](http://img.blog.csdn.net/20160515193011271?watermark/2/text/aHR0cDovL2Jsb2cuY3Nkbi5uZXQv/font/5a6L5L2T/fontsize/400/fill/I0JBQkFCMA==/dissolve/70/gravity/Center)
+
+##### 中止传输
+无论CAN设备处于段传输还是块传输中，都可以使用中止传输协议来中止传输。
+![](http://img.blog.csdn.net/20160515193028060?watermark/2/text/aHR0cDovL2Jsb2cuY3Nkbi5uZXQv/font/5a6L5L2T/fontsize/400/fill/I0JBQkFCMA==/dissolve/70/gravity/Center)
+协议的命令字解释如下：
+
+ * cs:命令标识符
+    + 4:中止传输请求
+ * X:总是0
+ * m:标识索引和子索引.
+ * d:中止码（表7中止码表）.
+下表是对各中止码的解释
+![](http://img.blog.csdn.net/20160515193039810?watermark/2/text/aHR0cDovL2Jsb2cuY3Nkbi5uZXQv/font/5a6L5L2T/fontsize/400/fill/I0JBQkFCMA==/dissolve/70/gravity/Center)
