@@ -29,7 +29,19 @@ CAN(Controller Area Network, 控制器局域网络)是由博世开发的一种�
 下面说明一下当几个器件同时发送时CAN总线是如何做裁决的。
 
 以下图为例。总线上有器件A，B，C，D。A，B，C同时发出SOF位为显性。而D为隐形，当它发现总线上的状态与自己的状态不一致时，D就进入监听状态。A，B，C继续发送数据。发送到ID的第5位时A，C为显性，B为隐形。B检测到总线的状态于自己的状态不一致,进入监听状态。A,C继续发送数据。这也说明B的ID比A，C要大。当发送到ID的第1位时A为隐形，C为显性，A进入监听状态。C继续发送。最终ID最小的C发送成功，A，B只能等待C发送完成之后再进行发送。然后A会发送成功，B等待，最后才是B发送。从上面的裁决过程可以看出，对于C来说，它的数据发送没有因为冲突而产生延迟。
+
 ![](http://img.blog.csdn.net/20151007202620019?watermark/2/text/aHR0cDovL2Jsb2cuY3Nkbi5uZXQv/font/5a6L5L2T/fontsize/400/fill/I0JBQkFCMA==/dissolve/70/gravity/Center "冲突处理细节")
 
+## 报文格式
+### 帧
+ CAN协议的报文传输主要由下面的4种帧来实现：
 
-![](http://img.blog.csdn.net/20160515164555430?watermark/2/text/aHR0cDovL2Jsb2cuY3Nkbi5uZXQv/font/5a6L5L2T/fontsize/400/fill/I0JBQkFCMA==/dissolve/70/gravity/Center)
+    +数据帧：从发射端携带数据到接收端。
+    +远程帧：总线单元发出远程帧，请求发送具有同一识别符的数据帧。
+    +错误帧：任何单元检测到一总线错误就发出错误帧。
+    +过载帧：过载帧用以在先行的和后续的数据帧（或远程帧）之间提供一附加的延时。
+
+同时帧间空间用来间隔数据帧/远程帧与其他帧。
+#### 数据帧
+![数据帧](http://img.blog.csdn.net/20160515164555430?watermark/2/text/aHR0cDovL2Jsb2cuY3Nkbi5uZXQv/font/5a6L5L2T/fontsize/400/fill/I0JBQkFCMA==/dissolve/70/gravity/Center “数据帧”)
+
