@@ -183,4 +183,5 @@ SDO段上传的过程与段下载的过程类似，只是命令字不同。
  * m:标识索引和子索引.
  * d:中止码（表7中止码表）.
 下表是对各中止码的解释
+
 ![](http://img.blog.csdn.net/20160515193039810?watermark/2/text/aHR0cDovL2Jsb2cuY3Nkbi5uZXQv/font/5a6L5L2T/fontsize/400/fill/I0JBQkFCMA==/dissolve/70/gravity/Center)
